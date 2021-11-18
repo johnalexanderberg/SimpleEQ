@@ -3,13 +3,20 @@
 #include <JuceHeader.h>
 
 
+enum Slope {
+    Slope_12,
+    Slope_24,
+    Slope_36,
+    Slope_48
+};
+
 // A data structure representing all of the parameter values
 
 struct ChainSettings
 {
     float peakFreq { 0 }, preakGainInDecibels { 0 }, peakQ {1.0f};
     float lowCutFreq { 0 }, highCutFreq { 0 };
-    int lowCutSlope { 0 }, highCutSlooe { 0 };
+    Slope lowCutSlope { Slope::Slope_12 }, highCutSlope { Slope::Slope_12 };
 };
 
 // Helper function that will give us all of these parameter values in our data struct.
