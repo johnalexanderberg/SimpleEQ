@@ -2,6 +2,21 @@
 
 #include <JuceHeader.h>
 
+
+// A data structure representing all of the parameter values
+
+struct ChainSettings
+{
+    float peakFreq { 0 }, preakGainInDecibels { 0 }, peakQ {1.0f};
+    float lowCutFreq { 0 }, highCutFreq { 0 };
+    int lowCutSlope { 0 }, highCutSlooe { 0 };
+};
+
+// Helper function that will give us all of these parameter values in our data struct.
+// Extracting our paramaters from the audio processor value tree state
+ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts);
+
+
 //==============================================================================
 /**
 */
@@ -58,11 +73,17 @@ private:
     // have a chain of 4 filters.
     using CutFilter = juce::dsp::ProcessorChain<Filter, Filter, Filter, Filter>;
     
-    // The chain represents the whole mono signal path (lowpass - parametric - highpass)
+    // The chain represents the whole mono signal path (lowpass - peak - highpass)
     using MonoChain = juce::dsp::ProcessorChain<CutFilter, Filter, CutFilter>;
     
     // We need 2 instances of the monochain to do stereo processing.
     MonoChain leftChain, rightChain;
+    
+    enum ChainPositions {
+        LowCut,
+        Peak,
+        HighCut
+    };
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SimpleEQAudioProcessor)
