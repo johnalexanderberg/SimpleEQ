@@ -23,6 +23,21 @@ struct ChainSettings
 // Extracting our paramaters from the audio processor value tree state
 ChainSettings getChainSettings(juce::AudioProcessorValueTreeState& apvts);
 
+// Creating a filter alias
+using Filter = juce::dsp::IIR::Filter<float>;
+
+// Each IIR low pass or high pass filter has a responce of 12db per octave, so if we want to have a chain with a responce of 48db per octave we need to
+// have a chain of 4 filters.
+using CutFilter = juce::dsp::ProcessorChain<Filter, Filter, Filter, Filter>;
+
+// The chain represents the whole mono signal path (lowpass - peak - highpass)
+using MonoChain = juce::dsp::ProcessorChain<CutFilter, Filter, CutFilter>;
+
+enum ChainPositions {
+    LowCut,
+    Peak,
+    HighCut
+};
 
 //==============================================================================
 /**
@@ -73,24 +88,12 @@ public:
 
 private:
     
-    // Creating a filter alias
-    using Filter = juce::dsp::IIR::Filter<float>;
-    
-    // Each IIR low pass or high pass filter has a responce of 12db per octave, so if we want to have a chain with a responce of 48db per octave we need to
-    // have a chain of 4 filters.
-    using CutFilter = juce::dsp::ProcessorChain<Filter, Filter, Filter, Filter>;
-    
-    // The chain represents the whole mono signal path (lowpass - peak - highpass)
-    using MonoChain = juce::dsp::ProcessorChain<CutFilter, Filter, CutFilter>;
+
     
     // We need 2 instances of the monochain to do stereo processing.
     MonoChain leftChain, rightChain;
     
-    enum ChainPositions {
-        LowCut,
-        Peak,
-        HighCut
-    };
+
     
     void updatePeakFilter(const ChainSettings& chainSettings);
     using Coefficients = Filter::CoefficientsPtr;
