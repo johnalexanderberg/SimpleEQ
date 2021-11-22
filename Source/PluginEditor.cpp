@@ -32,11 +32,34 @@ highCutSlopeSliderAttachment(audioProcessor.apvts, "HighCut Slope", highCutSlope
         addAndMakeVisible(component);
     }
     
+    // We need to listen for when the parameters change to update the GUI
+    // Grab all the params and add a listener to them
+    const auto& params = audioProcessor.getParameters();
+    
+    for( auto param : params )
+    {
+        param->addListener(this);
+    }
+    
+    // 60hz refresh rate
+    startTimerHz(60);
+    
+    
+    
+    
     setSize (600, 400);
 }
 
 SimpleEQAudioProcessorEditor::~SimpleEQAudioProcessorEditor()
 {
+    
+    const auto& params = audioProcessor.getParameters();
+    
+    for( auto param : params )
+    {
+        param->removeListener(this);
+    }
+    
 }
 
 //==============================================================================
@@ -172,7 +195,13 @@ void SimpleEQAudioProcessorEditor::timerCallback()
     if( parametersChanged.compareAndSetBool(false, true) )
     {
         //update the monochain
+        auto chainSettings = getChainSettings(audioProcessor.apvts);
+        auto peakCoefficients = makePeakFilter(chainSettings, audioProcessor.getSampleRate());
+        updateCoefficients(monoChain.get<ChainPositions::Peak>().coefficients, peakCoefficients);
+        
+        
         //signal a repaint so that a new response curve is drawn
+        repaint();
     }
 }
 

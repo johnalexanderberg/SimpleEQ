@@ -45,6 +45,64 @@ void updateCoefficients(Coefficients& old, const Coefficients& replacements);
 Coefficients makePeakFilter(const ChainSettings& chainSettings, double sampleRate);
 
 
+template<int Index, typename ChainType, typename CoefficientType>
+void update(ChainType& chain, const CoefficientType& coefficients)
+{
+    updateCoefficients(chain.template get<Index>().coefficients, coefficients[Index]);
+    chain.template setBypassed<Index>(false);
+}
+
+
+template<typename ChainType, typename CoefficientType>
+void updateCutFilter(ChainType& lowCut,
+                     const CoefficientType& cutCoefficients,
+                     const Slope& lowCutSlope)
+{
+    
+    // First, bypass all filters in the chain
+    lowCut.template setBypassed<0>(true);
+    lowCut.template setBypassed<1>(true);
+    lowCut.template setBypassed<2>(true);
+    lowCut.template setBypassed<3>(true);
+    
+    // turn on filters based on selected slope
+    
+    switch( lowCutSlope )
+    {
+            
+        case Slope_48:
+        {
+            update<3>(lowCut, cutCoefficients);
+        }
+        case Slope_36:
+        {
+            update<2>(lowCut, cutCoefficients);
+        }
+        case Slope_24:
+        {
+            update<1>(lowCut, cutCoefficients);
+        }
+        case Slope_12:
+        {
+            update<0>(lowCut, cutCoefficients);
+        }
+    }
+}
+
+inline auto makeLowCutFilter(const ChainSettings& chainSettings, double sampleRate)
+{
+    return juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(chainSettings.lowCutFreq,
+                                                                                       sampleRate,
+                                                                                       2 * (chainSettings.lowCutSlope + 1));
+}
+
+inline auto makeHighCutFilter(const ChainSettings& chainSettings, double sampleRate)
+{
+    return juce::dsp::FilterDesign<float>::designIIRLowpassHighOrderButterworthMethod(chainSettings.highCutFreq,
+                                                                                      sampleRate,
+                                                                                      2 * (chainSettings.highCutSlope + 1));
+}
+
 //==============================================================================
 /**
 */
@@ -99,55 +157,8 @@ private:
     // We need 2 instances of the monochain to do stereo processing.
     MonoChain leftChain, rightChain;
     
-
-    
     void updatePeakFilter(const ChainSettings& chainSettings);
 
-    
-    template<int Index, typename ChainType, typename CoefficientType>
-    void update(ChainType& chain, const CoefficientType& coefficients)
-    {
-        updateCoefficients(chain.template get<Index>().coefficients, coefficients[Index]);
-        chain.template setBypassed<Index>(false);
-    }
-    
-    
-    template<typename ChainType, typename CoefficientType>
-    void updateCutFilter(ChainType& lowCut,
-                         const CoefficientType& cutCoefficients,
-                         const Slope& lowCutSlope)
-    {
-        
-        // First, bypass all filters in the chain
-        lowCut.template setBypassed<0>(true);
-        lowCut.template setBypassed<1>(true);
-        lowCut.template setBypassed<2>(true);
-        lowCut.template setBypassed<3>(true);
-        
-        // turn on filters based on selected slope
-        
-        switch( lowCutSlope )
-        {
-                
-            case Slope_48:
-            {
-                update<3>(lowCut, cutCoefficients);
-            }
-            case Slope_36:
-            {
-                update<2>(lowCut, cutCoefficients);
-            }
-            case Slope_24:
-            {
-                update<1>(lowCut, cutCoefficients);
-            }
-            case Slope_12:
-            {
-                update<0>(lowCut, cutCoefficients);
-            }
-        }
-    }
-    
     void updateLowCutFilters(const ChainSettings& chainSettings);
     void updateHighCutFilters(const ChainSettings& chainSettings);
     
